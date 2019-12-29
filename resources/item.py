@@ -22,7 +22,7 @@ class Item(Resource):
             help="Every item needs a store is."
     )
         
-    #@jwt_required()
+    @jwt_required()
     def get(self, name):
         print(name)
         item = ItemModel.find_by_name(name)
@@ -32,7 +32,7 @@ class Item(Resource):
         return {'message': 'Item not found'}, 404
 
 
-    #@jwt_required()
+    @jwt_required()
     def post(self, name):
         if ItemModel.find_by_name(name):
             return {'message':'An item with name  already exists.'.format(name)}, 400
@@ -45,7 +45,7 @@ class Item(Resource):
         return item.json(), 201
     
     
-   # @jwt_required()
+    @jwt_required()
     def delete(self, name):
         item = ItemModel.find_by_name(name)
         if item:
@@ -53,7 +53,7 @@ class Item(Resource):
 
         return {'message': 'Item deleted'}
 
-
+    @jwt_required()
     def put(self, name):
         data = Item.parser.parse_args()
         item = ItemModel.find_by_name(name)
@@ -70,6 +70,6 @@ class Item(Resource):
 
 
 class ItemList(Resource):
-    #@jwt_required()
+    @jwt_required()
     def get(self):
       return {'items': list(map(lambda x: x.json(), ItemModel.query.all()))} ##[item.json() for item in ItemModel.query.all()]}
