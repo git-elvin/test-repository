@@ -15,4 +15,5 @@ six
 SQLAlchemy
 Werkzeug
 wheel
-uwsgi 
+uwsgi
+psycopg2
