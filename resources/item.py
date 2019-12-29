@@ -37,7 +37,7 @@ class Item(Resource):
         if ItemModel.find_by_name(name):
             return {'message':'An item with name  already exists.'.format(name)}, 400
         data = Item.parser.parse_args()
-        item = ItemModel(name, data['price'], data['quality'], data['store_id'])
+        item = ItemModel(name, **data)
         try: 
             item.save_to_db()
         except:
@@ -48,9 +48,10 @@ class Item(Resource):
     @jwt_required()
     def delete(self, name):
         item = ItemModel.find_by_name(name)
-        if item:
-            item.delete_from_db()
-
+        if not item:
+            return {'message': 'Item not found'}, 404
+        
+        item.delete_from_db()
         return {'message': 'Item deleted'}
 
     @jwt_required()
@@ -59,7 +60,7 @@ class Item(Resource):
         item = ItemModel.find_by_name(name)
 
         if item is None:
-            item = ItemModel(name, data['price'],  data['quality'],  data['store_id'])
+            item = ItemModel(name, **data)
         else:
             item.price = data['price']
             item.quality = data['quality']
@@ -72,4 +73,4 @@ class Item(Resource):
 class ItemList(Resource):
     @jwt_required()
     def get(self):
-      return {'items': list(map(lambda x: x.json(), ItemModel.query.all()))} ##[item.json() for item in ItemModel.query.all()]}
+      return {'items': [item.json() for item in ItemModel.find_all()] } ##[item.json() for item in ItemModel.query.all()]} list(map(lambda x: x.json(), ItemModel.query.all()))
