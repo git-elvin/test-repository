@@ -1,24 +1,26 @@
 import sqlite3
 from flask_restful import Resource, reqparse
 from modals.user import UserModel
-from flask_jwt import  jwt_required
+from werkzeug.security import safe_str_cmp
+from flask_jwt_extended import create_access_token, create_refresh_token
+from flask_jwt_extended import  jwt_required
+
+_user_parser = reqparse.RequestParser()
+_user_parser.add_argument( 'username',
+                            type=str,
+                            required=True,
+                            help="This field cannot be blank."
+    )
+
+_user_parser.add_argument('password',
+                            type=str,
+                            required=True,
+                            help="This field cannot be blank."
+    )
 
 class UserRegister(Resource):
-    parser = reqparse.RequestParser()
-    parser.add_argument('username',
-        type=str,
-        required=True,
-        help="This field cannot be blank."
-    )
-
-    parser.add_argument('password',
-        type=str,
-        required=True,
-        help="This field cannot be blank."
-    )
-
     def post(self):
-        data = UserRegister.parser.parse_args()
+        data = _user_parser.parse_args()
 
         if UserModel.find_by_username(data['username']):
             return {"message": "A user with that username already exists"}, 400
@@ -30,7 +32,7 @@ class UserRegister(Resource):
     
 class User(Resource):
     @classmethod
-    @jwt_required()
+    @jwt_required
     def get(cls, user_id):
         user = UserModel.find_by_id(user_id)
         if not user:
@@ -38,7 +40,7 @@ class User(Resource):
         return user.json()
     
     @classmethod
-    @jwt_required()
+    @jwt_required
     def delete(cls, user_id):
         user = UserModel.find_by_id(user_id)
         if not user:
@@ -48,6 +50,27 @@ class User(Resource):
 
 class UsersList(Resource):
     @classmethod
-    @jwt_required()
+    @jwt_required
     def get(self):
         return {'users': [user.json() for user in UserModel.find_all()]}
+
+class UserLogin(Resource):
+    @classmethod
+    def post(cls):
+        #get data from parser
+        data = _user_parser.parse_args()
+        # find user in database
+        user = UserModel.find_by_username(data['username'])
+        # check password
+        if user and safe_str_cmp(user.password, data['password']):
+            #create access token 
+            access_token = create_access_token(identity=user.id, fresh=True)
+            refresh_token = create_refresh_token(user.id)
+            return {
+                'access_token': access_token,
+                'refresh_token': refresh_token
+            }, 200
+
+        return { 'message': 'Invalid credential'}, 401
+
+

@@ -1,6 +1,6 @@
 import json
 from flask_restful import Resource, reqparse
-from flask_jwt import  jwt_required
+from flask_jwt_extended import  jwt_required, get_jwt_claims
 from modals.item import ItemModel
 
 
@@ -22,7 +22,7 @@ class Item(Resource):
             help="Every item needs a store is."
     )
         
-    @jwt_required()
+    @jwt_required
     def get(self, name):
         print(name)
         item = ItemModel.find_by_name(name)
@@ -32,10 +32,10 @@ class Item(Resource):
         return {'message': 'Item not found'}, 404
 
 
-    @jwt_required()
+    @jwt_required
     def post(self, name):
         if ItemModel.find_by_name(name):
-            return {'message':'An item with name  already exists.'.format(name)}, 400
+            return {'message': 'An item with name  already exists.'.format(name)}, 400
         data = Item.parser.parse_args()
         item = ItemModel(name, **data)
         try: 
@@ -45,8 +45,12 @@ class Item(Resource):
         return item.json(), 201
     
     
-    @jwt_required()
+    @jwt_required
     def delete(self, name):
+        claims = get_jwt_claims()
+        if not claims['is_admin']:
+            return {'message': 'Admin privilege requerid'}, 404
+        
         item = ItemModel.find_by_name(name)
         if not item:
             return {'message': 'Item not found'}, 404
@@ -54,7 +58,7 @@ class Item(Resource):
         item.delete_from_db()
         return {'message': 'Item deleted'}
 
-    @jwt_required()
+    @jwt_required
     def put(self, name):
         data = Item.parser.parse_args()
         item = ItemModel.find_by_name(name)
@@ -71,6 +75,6 @@ class Item(Resource):
 
 
 class ItemList(Resource):
-    @jwt_required()
+    @jwt_required
     def get(self):
       return {'items': [item.json() for item in ItemModel.find_all()] } ##[item.json() for item in ItemModel.query.all()]} list(map(lambda x: x.json(), ItemModel.query.all()))
